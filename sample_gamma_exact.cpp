@@ -90,11 +90,11 @@ double det_H_omega(arma::mat invOmega, IntegerVector gam, int nu, int p, Integer
 }
 
 // [[Rcpp::export]]
-SEXP sample_gamma_exact(NumericMatrix xOmega_star_inv, NumericMatrix xOmega_star, NumericMatrix SS, double xlambda, int xn, IntegerVector xgamma,
+SEXP sample_gamma_exact(NumericMatrix xOmega_star_inv, NumericMatrix xOmega_star, NumericMatrix SS, double xlambda, int xn, 
                   NumericVector xome_upper, double q, double a_q, double b_q, IntegerMatrix indi, IntegerMatrix d) {   
     int pC2 = xome_upper.size();
     int p = SS.ncol();
-    IntegerVector gamma_tt = clone(xgamma);
+    IntegerVector gamma_tt(pC2);
     IntegerVector gamma_max(pC2);
 
     arma::mat Omega_star_inv(REAL(xOmega_star_inv),p, p, false, true); 
@@ -110,7 +110,7 @@ SEXP sample_gamma_exact(NumericMatrix xOmega_star_inv, NumericMatrix xOmega_star
     if(drow >0){
       for(int ii = 0; ii < drow; ii ++){
         int lgamma = sum(d(ii,_));
-        weights[ii] =  lgamma*log(q) + (pC2-lgamma)*log(1-q) + (p+lgamma)*log(xlambda/2) + 0.5*(lgamma + p)*(log(2*M_PI) - log(xn/2));
+        weights[ii] =  lgamma*log(q) + (pC2-lgamma)*log(1-q) + (p+lgamma)*log(xlambda/2) + 0.5*(lgamma + p)*(log(2*M_PI) - log(xn/2)); //
         for( int i=0; i < pC2; i++){
           if(d(ii,i) ==1){weights[ii] -= xlambda*abs(xome_upper[i]);}
         }
@@ -119,7 +119,7 @@ SEXP sample_gamma_exact(NumericMatrix xOmega_star_inv, NumericMatrix xOmega_star
         weights[ii] += constant;
       }
       
-      arma::vec wei = as<arma::vec>(weights);
+      //arma::vec wei = as<arma::vec>(weights);
       //Rcout<<wei;
       int index = sample_index(drow, weights);
       gamma_tt = d(index,_);

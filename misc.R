@@ -19,6 +19,3 @@ res<- sample_Omega(S, ind_noi_all,lambda, n, gamma_M, tau, Sigma, Omega, apost, 
 
 res_W<- sample_Omega_W(S, ind_noi_all,lambda, n, gamma_M, tau, Sigma, Omega, apost, b_lambda)
 
-
-/home/llin/tophat-2.0.11.Linux_x86_64/tophat2 -p 1 -G lncRNA.e67xloc.new.gtf --keep-fasta-order --no-novel-juncs /shared/silo_researcher/Gottardo_R/jingyuan_working/iGenomes/Homo_sapiens/UCSC/hg19/Sequence/BowtieIndex/genome SRR073723_1.fastq
-

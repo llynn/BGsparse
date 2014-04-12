@@ -12,24 +12,22 @@ sourceCpp("sample_gamma.cpp", rebuild=TRUE, verbose=FALSE)
 sourceCpp("sample_gamma_exact.cpp", rebuild=TRUE, verbose=FALSE)
 sourceCpp("sample_Omega.cpp", rebuild=TRUE, verbose=FALSE)
 
-
 source("init.R")
-
 system.time(for (tt in 1:(burnin+niter)) {  
   if(tt%%1000==0){
     cat("iteration = ", iter <- tt, "\n")   
   }
 
   #### sample gamma (together with q) ####
-  res1 <- sample_gamma(Omega_star_inv,Omega_star, S/n,lambda,n,gamma,Omega_star[upperind],p_gamma,pg1,pg2,r_bar,q,a_q,b_q,indi)
-  gamma <- res1$gamma_tt  
-  q <- res1$q
-  a_gm <- res1$accept
+#   res1 <- sample_gamma(Omega_star_inv,Omega_star, S/n,lambda,n,gamma,Omega_star[upperind],p_gamma,pg1,pg2,r_bar,q,a_q,b_q,indi)
+#   gamma <- res1$gamma_tt  
+#   q <- res1$q
+#   a_gm <- res1$accept
   
   ## Gibbs sampling for gamma when p is small (enumerate all possible combination of gamma vector)
-#   res1 <- sample_gamma_exact(Omega_star_inv, Omega_star, S/n, lambda, n, gamma, Omega_star[upperind],q, a_q, b_q, indi, d_sub) 
-#   gamma <- res1$gamma_tt ##gamma <-res1$gamma_max (get MAP estimate)
-#   q <- res1$q
+  res1 <- sample_gamma_exact(Omega_star_inv, Omega_star, S/n, lambda, n, Omega_star[upperind],q, a_q, b_q, indi, d_sub) 
+  gamma <- res1$gamma_tt ##gamma <-res1$gamma_max (get MAP estimate)
+  q <- res1$q
   
   gamma_M <-diag(rep(1,p)); gamma_M[upperind] <- gamma; gamma_M <- gamma_M + t(gamma_M) - diag(diag(gamma_M))
   
@@ -37,7 +35,7 @@ system.time(for (tt in 1:(burnin+niter)) {
   res2 <- sample_Omega(S, ind_noi_all,lambda, n, gamma_M, tau, Sigma, Omega, apost, b_lambda)
   Omega <- res2$Omega
   Sigma <- res2$Sigma
- # lambda <- res2$lambda
+  lambda <- res2$lambda
   
   #### sample tau ####
   lambda_tau <- lambda^2

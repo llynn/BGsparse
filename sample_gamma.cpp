@@ -4,16 +4,6 @@
 using namespace Rcpp;
 #include <Rcpp/Benchmark/Timer.h>
 
-//double trace(NumericMatrix m) {  
-//  // compute trace of a square matrix
-//  int p = m.ncol();
-//  double tr = 0.;
-//  for (int i = 0; i < p; i++){
-//    tr += m(i,i);
-//  }
-//  return tr;
-//}
-
 double max(double m, double n) {  
   // return max value
   double output;
@@ -26,7 +16,7 @@ double max(double m, double n) {
 }
 
 double det_H_omega(arma::mat invOmega, IntegerVector gam, int nu, int p, IntegerMatrix indi, int pC2){
- arma::mat H(nu, nu);
+  arma::mat H(nu, nu);
   //Timer tt;
   IntegerMatrix indi_sub(nu,2);
   int count = 0; int t = 0;
@@ -50,25 +40,25 @@ double det_H_omega(arma::mat invOmega, IntegerVector gam, int nu, int p, Integer
     xi = indi_sub(i,0); xj = indi_sub(i,1);
     //diagonal
     if(xi == xj){
-      H(i,i) = -invOmega(xi,xj)*invOmega(xi,xj);
+      H(i,i) = invOmega(xi,xj)*invOmega(xi,xj);
     }else{
-      H(i,i) = -2*invOmega(xj,xi)*invOmega(xj, xi) - 2*invOmega(xi, xi)*invOmega(xj, xj);
+      H(i,i) = 2*invOmega(xj,xi)*invOmega(xj, xi) + 2*invOmega(xi, xi)*invOmega(xj, xj);
     }
     //off-diagonal
     for (int j = (i+1); j < nu; j++){
         xl = indi_sub(j,0); xm = indi_sub(j,1);
         if((xi != xj)&(xl != xm)) {
-          H(i,j) = -invOmega(xj,xl)*invOmega(xm, xi) - invOmega(xi, xl)*invOmega(xm, xj) - 
-                 invOmega(xj,xm)*invOmega(xl, xi) - invOmega(xi, xm)*invOmega(xl, xj);
+          H(i,j) = invOmega(xj,xl)*invOmega(xm, xi) + invOmega(xi, xl)*invOmega(xm, xj) + 
+                 invOmega(xj,xm)*invOmega(xl, xi) + invOmega(xi, xm)*invOmega(xl, xj);
         }else{
           if((xl == xm) & (xi == xj)){
-            H(i,j) = -invOmega(xi,xl)*invOmega(xl, xi);
+            H(i,j) = invOmega(xi,xl)*invOmega(xl, xi);
             
           }else if(xi == xj){
-            H(i,j) = -invOmega(xj, xl)*invOmega(xm,xi)-invOmega(xi, xm)*invOmega(xl,xj);
+            H(i,j) = invOmega(xj, xl)*invOmega(xm,xi)+invOmega(xi, xm)*invOmega(xl,xj);
             
           }else{
-            H(i,j) = -invOmega(xj, xl)*invOmega(xl,xi)-invOmega(xi, xl)*invOmega(xl,xj);
+            H(i,j) = invOmega(xj, xl)*invOmega(xl,xi)+invOmega(xi, xl)*invOmega(xl,xj);
           }
             
         }
@@ -80,31 +70,29 @@ double det_H_omega(arma::mat invOmega, IntegerVector gam, int nu, int p, Integer
 
   double output = det(H);
   //tt.step("det H") ;
-  
-  //arma::mat res(REAL(tt), 3, 1, false, true);
- // Rcout << res<<std::endl;
-  //Rcout << H ;
+ 
+ // arma::mat res(REAL(tt), 3, 1, false, true); 
+  //Rcout << res<<std::endl; 
+ // Rcout << H ;
   return output;
 }
 
 // [[Rcpp::export]]
-SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xS, double xlambda, int xn, IntegerVector xgamma,
-                  NumericVector xome_upper, double p_gamma, double pg1, double pg2, 
+SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xOmega_star, NumericMatrix SS, double xlambda, int xn, 
+                  IntegerVector xgamma, NumericVector xome_upper, double p_gamma, double pg1, double pg2, 
                   int r_bar, double q, double a_q, double b_q, IntegerMatrix indi) {   
     int pC2 = xome_upper.size();
-    int p = xS.ncol();
+    int p = SS.ncol();
     int count = 0; // for the length of freemove
     int accept = 0;
     IntegerVector gamma_tt = clone(xgamma);
-//    arma::mat Omega_star(REAL(xOmega_star),xOmega_star.nrow(), xOmega_star.ncol(), true, true); 
-//    arma::mat U_inv = inv(chol(Omega_star));
-//
-//    arma::mat Omega_star_inv = U_inv*U_inv.t();
-//    timer.step("find inverse") ;
-//    NumericVector res(timer);
-//    Rcout << res[0] << std::endl;
     
     arma::mat Omega_star_inv(REAL(xOmega_star_inv),p, p, true, true); 
+    arma::mat Omega_star(REAL(xOmega_star),p, p, false, true); 
+    arma::mat xS(REAL(SS),p, p, false, true); 
+    
+    double constant =  xn*(log(det(Omega_star)) - trace(xS*Omega_star))/2 - xlambda*trace(Omega_star)/2; // eqn 4.2 for Omega*
+    
     for(int i = 0; i < pC2; i++){
       if (xome_upper[i] != 0) {
         count +=1;
@@ -128,13 +116,13 @@ SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xS, double xlambd
       if(count == 1){
         gamma_tt[freemove[0]] = 1-xgamma[freemove[0]];
       }else{
-         Rcpp::NumericVector m(1); 
+         NumericVector m(1); 
         do{
           gamma_tt = clone(xgamma);
-          if (Rcpp::as<double>(Rcpp::runif(1)) <= p_gamma) {
-            m = Rcpp::rbinom(1,count,pg1); 
+          if (as<double>(runif(1)) <= p_gamma) {
+            m = rbinom(1,count,pg1); 
           } else {
-            m = Rcpp::rbinom(1,count,pg2); 
+            m = rbinom(1,count,pg2); 
           }
           
           if(m[0] == 0){m[0] +=1;}
@@ -153,9 +141,10 @@ SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xS, double xlambd
         
       }
       
-      
-      // comupte log posterior distribution
-      double log_deno = 0; double log_nume = 0;
+//      arma::ivec gamtt = as<arma::ivec> (gamma_tt);
+//      Rcout << "gamma_tt" <<gamtt  << std::endl;    
+      // compute log posterior distribution
+      double log_deno = constant; double log_nume = constant;
       double lgamma_tt = sum(gamma_tt); double lgamma = sum(xgamma);
       //Rcout<<"lgamma_tt = "<<lgamma_tt <<"lgamma = "<<lgamma<<std::endl;
 
@@ -178,7 +167,7 @@ SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xS, double xlambd
       
       log_deno -= 0.5*log(max(temp, 1.0e-20));
       //Rcout << "determinant = "<<temp<<std::endl;
-      //Rcout<<"4. log_nume = " << log_nume <<"log_deno = "<<log_deno<<std::endl;
+     // Rcout<<"4. log_nume = " << log_nume <<"log_deno = "<<log_deno<<std::endl;
       
        if (log(as<double>(runif(1)) ) <= (log_nume - log_deno)) {
          accept = 1;
@@ -189,9 +178,10 @@ SEXP sample_gamma(NumericMatrix xOmega_star_inv, NumericMatrix xS, double xlambd
     
     // to update q, restrict q to be less than 0.5
     NumericVector qq = rbeta(1,sum(gamma_tt)+a_q, pC2-sum(gamma_tt)+b_q);
-    if(qq[0] < 0.5){
-      q = qq[0];   
-    }
+    q = qq[0];
+//    if(qq[0] < 0.5){
+//      q = qq[0];   
+//    }
     
     //return wrap(as<double>(R_det(xOmega_star)));
     return List::create(Named("accept") = accept, Named("gamma_tt") = gamma_tt, Named("q") = q);

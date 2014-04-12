@@ -30,25 +30,25 @@ double det_H_omega(arma::mat invOmega, IntegerVector gam, int nu, int p, Integer
     xi = indi_sub(i,0); xj = indi_sub(i,1);
     //diagnoal
     if(xi == xj){
-      H(i,i) = -invOmega(xi,xj)*invOmega(xi,xj);
+      H(i,i) = invOmega(xi,xj)*invOmega(xi,xj);
     }else{
-      H(i,i) = -2*invOmega(xj,xi)*invOmega(xj, xi) - 2*invOmega(xi, xi)*invOmega(xj, xj);
+      H(i,i) = 2*invOmega(xj,xi)*invOmega(xj, xi) + 2*invOmega(xi, xi)*invOmega(xj, xj);
     }
     for (int j = (i+1); j < nu; j++){
         xl = indi_sub(j,0); xm = indi_sub(j,1);
         if((xi != xj)&(xl != xm)) {
-          H(i,j) = -invOmega(xj,xl)*invOmega(xm, xi) - invOmega(xi, xl)*invOmega(xm, xj) - 
-                 invOmega(xj,xm)*invOmega(xl, xi) - invOmega(xi, xm)*invOmega(xl, xj);
+          H(i,j) = invOmega(xj,xl)*invOmega(xm, xi) + invOmega(xi, xl)*invOmega(xm, xj) + 
+                 invOmega(xj,xm)*invOmega(xl, xi) + invOmega(xi, xm)*invOmega(xl, xj);
           
         }else{
           if((xl == xm) & (xi == xj)){
-            H(i,j) = -invOmega(xi,xl)*invOmega(xl, xi);
+            H(i,j) = invOmega(xi,xl)*invOmega(xl, xi);
             
           }else if(xi == xj){
-            H(i,j) = -invOmega(xj, xl)*invOmega(xm,xi)-invOmega(xi, xm)*invOmega(xl,xj);
+            H(i,j) = invOmega(xj, xl)*invOmega(xm,xi)+invOmega(xi, xm)*invOmega(xl,xj);
             
           }else{
-            H(i,j) = -invOmega(xj, xl)*invOmega(xl,xi)-invOmega(xi, xl)*invOmega(xl,xj);
+            H(i,j) = invOmega(xj, xl)*invOmega(xl,xi)+invOmega(xi, xl)*invOmega(xl,xj);
           }
             
         }
@@ -119,7 +119,7 @@ double det_H_omega_slow(arma::mat invOmega, IntegerVector gam, int nu, int p, In
 //          Rcout << xE2 << std::endl;
 //        }
 //        
-        H(i,j) = -trace(invOmega * xE1 * invOmega * xE2);
+        H(i,j) = trace(invOmega * xE1 * invOmega * xE2);
         H(j,i) = H(i,j);
         //xE1(indi_sub(i,0),indi_sub(i,1)) = 0; xE1(indi_sub(i,1),indi_sub(i,0)) = 0;
         //xE2(indi_sub(j,0),indi_sub(j,1)) = 0; xE2(indi_sub(j,1),indi_sub(j,0)) = 0;
